@@ -1,16 +1,16 @@
-#MEGA-COMBINED SCRIPT OF SIMULATION
+# MEGA-COMBINED SCRIPT OF SIMULATION
 
-
+# necessary imports
 import math
 import csv
 import numpy as np
 from scipy import signal as sig #take out
 
+# prompting user for channel and runtime inputs
 chan = input("input channel:")
 chan = int(chan)
 run_time = input("input runtime:")
 run_time = int(run_time)
-
 
 
 #***********************************#
@@ -34,7 +34,6 @@ def std_params():
 
  global accum_len
  accum_len = 2 ** 23 # number of clock cycles of accumulation in every dump of data
- #accum_len = 2 ** 13
 
  global accum_time
  accum_time = ((adc_clk)/FFT_length)/accum_len # amount of time one accumulation cycle integrates (seconds)
@@ -42,16 +41,18 @@ def std_params():
  # Frequency Parameters #
 
  global source_freq
- source_freq = 10 * 10 ** 6
+ source_freq = 10 * 10 ** 6 # frequency of the source wave
 
  global square_freq
- square_freq = 10 * 10 ** 3
+ square_freq = 10 * 10 ** 3 # frequency of square wave
 
  global fs_fft
  fs_fft = adc_clk/FFT_length  # Define a new frequency to represent the rate at which the FFT is produced
 
  global nyq_fft
  nyq_fft = fs_fft/2           # Nyquist frequency of FFT production rate
+
+
 
 #calling the parameters used
 std_params()
@@ -92,7 +93,7 @@ def real_mix(wave_1, wave_2):
 #             Functions             #
 #***********************************#
 
-#takes the magnitude of a complex value/vector
+# takes the magnitude of a complex value/vector
 def magnitude(sig_1, sig_2):
     mag = np.sqrt(np.square(sig_1) + np.square(sig_2))
     return mag
@@ -102,27 +103,27 @@ def intensify(sig_1, sig_2):
     intense = np.square(sig_1) + np.square(sig_2)
     return intense
 
-#CHANGE FUNCTION
-#creates the output of i and  q going through a lowpass filter
+#CHANGE FUNCTION!!
+# creates the output of i and  q going through a lowpass filter
 def lowpass_i_q(data_i, data_q, order = 7, cutoff = nyq_fft * 0.01, fsamp = fs_fft):
     B, A = sig.butter(order, cutoff, output='ba', fs = fsamp)
     filt_i = sig.filtfilt(B,A,data_i)
     filt_q = sig.filtfilt(B,A,data_q)
     return(filt_i, filt_q)
 
-#Single-ended FFT
+# Single-ended FFT
 def fft(signal):
     spectrum = np.fft.rfft(signal, n = FFT_length)
     intensity = np.real(spectrum)**2 + np.imag(spectrum)**2
     return spectrum, intensity
 
-#Chopping
+# Chopping
 def GET_TO_DA_CHOPPAH(signal, timespace):
     sq_wave = 0.5 * (sig.square(2 * np.pi * square_freq * timespace) + 1)
     chopped_wave = signal * sq_wave
     return chopped_wave
 
-#saving data to text file
+# saving data to text file
 def save_data(file_name, data):
     file = open(file_name, 'w')
     writer = csv.writer(file)
@@ -153,7 +154,7 @@ timestep = 1/adc_clk #frequency of fft span
 # note fft_freq comes from the linspace used for the time array. length/number of samples
 # this array will be used to properly map the x-axis in Fourier space plots
 fft_freq = np.fft.fftfreq(FFT_length, d=timestep) #describe variable jon
-rfft_freq = np.fft.rfftfreq(FFT_length, d=timestep) #describe variable jon 
+rfft_freq = np.fft.rfftfreq(FFT_length, d=timestep) #describe variable jon
 
 
 accum_frames #display accum_frames value
@@ -185,15 +186,15 @@ n_final_intsty_out = np.zeros((num_accum, FFT_length))
 #           Creating Time           #
 #                                   #
 #***********************************#
-#complicated but important... mimic a sampled fpga
-#BEGINNING OF LOOP
+
+# mimicing a sampled fpga
+# BEGINNING OF LOOP
 for i in range(num_accum):
     print('we are on accumulation number %d out of %d'%(i+1, num_accum))
 
     ##### Create an array with the times of the FFT frames #####
 
     frame_times = np.linspace(i * frame_time, i * frame_time + (accum_frames-1) * frame_time, (accum_frames)  )
-
 
     # Create an array of times that will be used to create the "pieces" of the wave
     # Populate time array with lengths to be used later
@@ -202,12 +203,12 @@ for i in range(num_accum):
                             num = accum_frames-2)
 
 
-#***********************************#
-#                                   #
-#            Signals                #
-#   (Creation and Timestreaming)    #
-#                                   #
-#***********************************#
+    #***********************************#
+    #                                   #
+    #            Signals                #
+    #   (Creation and Timestreaming)    #
+    #                                   #
+    #***********************************#
 
 
     signal = real_wave(1, source_freq, timespace) # tone of interest
